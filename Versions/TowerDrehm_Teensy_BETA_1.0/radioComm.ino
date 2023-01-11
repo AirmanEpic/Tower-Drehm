@@ -1,7 +1,8 @@
 //Arduino/Teensy Flight Controller - dRehmFlight
 //Author: Nicholas Rehm
 //Project Start: 1/6/2020
-//Version: Beta 1.2
+//Last Updated: 7/29/2022
+//Version: Beta 1.3
 
 //========================================================================================================================//
 
@@ -43,7 +44,10 @@ void radioSetup() {
   //SBUS Recevier 
   #elif defined USE_SBUS_RX
     sbus.begin();
-    
+
+  //DSM receiver
+  #elif defined USE_DSM_RX
+    Serial3.begin(115000);
   #else
     #error No RX type defined...
   #endif
@@ -51,7 +55,7 @@ void radioSetup() {
 
 unsigned long getRadioPWM(int ch_num) {
   //DESCRIPTION: Get current radio commands from interrupt routines 
-  unsigned long returnPWM;
+  unsigned long returnPWM = 0;
   
   if (ch_num == 1) {
     returnPWM = channel_1_raw;
@@ -75,6 +79,16 @@ unsigned long getRadioPWM(int ch_num) {
   return returnPWM;
 }
 
+//For DSM type receivers
+void serialEvent3(void)
+{
+  #if defined USE_DSM_RX
+    while (Serial3.available()) {
+        DSM.handleSerialEvent(Serial3.read(), micros());
+    }
+  #endif
+}
+
 
 
 //========================================================================================================================//
@@ -86,36 +100,36 @@ unsigned long getRadioPWM(int ch_num) {
 void getPPM() {
   unsigned long dt_ppm;
   int trig = digitalRead(PPM_Pin);
-  if (trig==1) { //only care about rising edge
+  if (trig==1) { //Only care about rising edge
     dt_ppm = micros() - time_ms;
     time_ms = micros();
 
     
-    if (dt_ppm > 5000) { //waiting for long pulse to indicate a new pulse train has arrived
+    if (dt_ppm > 5000) { //Waiting for long pulse to indicate a new pulse train has arrived
       ppm_counter = 0;
     }
   
-    if (ppm_counter == 1) { //first pulse
+    if (ppm_counter == 1) { //First pulse
       channel_1_raw = dt_ppm;
     }
   
-    if (ppm_counter == 2) { //second pulse
+    if (ppm_counter == 2) { //Second pulse
       channel_2_raw = dt_ppm;
     }
   
-    if (ppm_counter == 3) { //third pulse
+    if (ppm_counter == 3) { //Third pulse
       channel_3_raw = dt_ppm;
     }
   
-    if (ppm_counter == 4) { //fourth pulse
+    if (ppm_counter == 4) { //Fourth pulse
       channel_4_raw = dt_ppm;
     }
   
-    if (ppm_counter == 5) { //fifth pulse
+    if (ppm_counter == 5) { //Fifth pulse
       channel_5_raw = dt_ppm;
     }
   
-    if (ppm_counter == 6) { //sixth pulse
+    if (ppm_counter == 6) { //Sixth pulse
       channel_6_raw = dt_ppm;
     }
     
